@@ -1,0 +1,17 @@
+services:
+  bridge:
+    container_name: bridge-dev-bridge
+    build:
+      context: ../
+      dockerfile: .docker/dev.Dockerfile
+    env_file:
+      - ./env/dev.env
+    develop:
+      watch:
+        - action: rebuild
+          path: ../.docker/dev.Dockerfile
+        - action: rebuild
+          path: ../Cargo.toml
+        - action: sync
+          path: ../src/
+          target: /app/src/

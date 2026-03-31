@@ -1,0 +1,20 @@
+name: CI
+
+on:
+  workflow_dispatch:
+  # pull_request:
+  #   branches: [master]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-make
+        run: cargo install cargo-make
+
+      - name: Run CI
+        run: makers ci

@@ -1,0 +1,74 @@
+[tasks.default]
+clear = true
+alias = "dev"
+
+[tasks.dev]
+clear = true
+command = "docker"
+args = [
+    "compose",
+    "-f",
+    "infra/dev.compose.yml",
+    "up",
+    "--build",
+    "--force-recreate",
+    "--remove-orphans",
+    "--abort-on-container-exit",
+    "--watch",
+]
+
+[tasks.test]
+clear = true
+command = "docker"
+args = [
+    "compose",
+    "-f",
+    "infra/test.compose.yml",
+    "up",
+    "--build",
+    "--force-recreate",
+    "--remove-orphans",
+    "--abort-on-container-exit",
+]
+
+[tasks.ci]
+clear = true
+dependencies = ["deny", "check", "clippy"]
+
+# Dependencies
+
+[tasks.deny]
+clear = true
+command = "cargo"
+args = [
+    "deny",
+    "check",
+    "--allow",
+    "unmatched-source",
+    "--allow",
+    "unlicensed",
+    "--allow",
+    "license-not-encountered",
+    "--allow",
+    "no-license-field",
+    "--allow",
+    "duplicate",
+]
+
+[tasks.check]
+clear = true
+command = "cargo"
+args = ["check", "--workspace", "--all-features"]
+
+[tasks.clippy]
+clear = true
+command = "cargo"
+args = [
+    "clippy",
+    "--workspace",
+    "--all-targets",
+    "--all-features",
+    "--",
+    "-D",
+    "warnings",
+]
