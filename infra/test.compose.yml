@@ -1,8 +1,0 @@
-services:
-  bridge:
-    container_name: bridge-test-bridge
-    build:
-      context: ../
-      dockerfile: .docker/test.Dockerfile
-    env_file:
-      - ./env/test.env

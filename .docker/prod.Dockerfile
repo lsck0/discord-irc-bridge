@@ -18,6 +18,3 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 WORKDIR /app
 COPY --from=builder /app/target/release/discord-irc-bridge .
 CMD ["./discord-irc-bridge"]
-
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s \
-    CMD test -f /tmp/healthy || exit 1

@@ -2,8 +2,8 @@ name: CD
 
 on:
   workflow_dispatch:
-  # push:
-  #   branches: [master]
+  push:
+    branches: [master]
 
 env:
   REGISTRY: ghcr.io

@@ -1,4 +1,15 @@
 services:
+  ircd:
+    container_name: bridge-dev-ircd
+    image: inspircd/inspircd-docker
+    environment:
+      - INSP_NET_NAME=discord-irc-bridge
+      - INSP_NET_SUFFIX=.dev.local
+      - INSP_CONNECT_PASSWORD=password
+      - INSP_ENABLE_DNSBL=no
+    ports:
+      - 6667:6667
+
   bridge:
     container_name: bridge-dev-bridge
     build:
@@ -6,6 +17,8 @@ services:
       dockerfile: .docker/dev.Dockerfile
     env_file:
       - ./env/dev.env
+    depends_on:
+      - ircd
     develop:
       watch:
         - action: rebuild

@@ -17,20 +17,6 @@ args = [
     "--watch",
 ]
 
-[tasks.test]
-clear = true
-command = "docker"
-args = [
-    "compose",
-    "-f",
-    "infra/test.compose.yml",
-    "up",
-    "--build",
-    "--force-recreate",
-    "--remove-orphans",
-    "--abort-on-container-exit",
-]
-
 [tasks.ci]
 clear = true
 dependencies = ["deny", "check", "clippy"]

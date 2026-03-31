@@ -16,6 +16,3 @@ WORKDIR /app
 COPY .. .
 COPY --from=builder /app/target target
 CMD ["cargo", "watch", "-x", "run"]
-
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s \
-    CMD test -f /tmp/healthy || exit 1
