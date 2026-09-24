@@ -14,6 +14,11 @@ use crate::{
 const SEND_INTERVAL: Duration = Duration::from_millis(600);
 const RECONNECT_DELAY: Duration = Duration::from_secs(15);
 
+// RFC 2812 caps a full IRC line at 512 bytes including CRLF. `PRIVMSG <channel> :<text>\r\n`
+// spends bytes on the command, channel name and framing before the message text starts, and
+// the server prepends `:<prefix> ` when relaying, so 450 leaves headroom for both.
+const IRC_MAX_LINE_LEN_BYTES: usize = 450;
+
 pub async fn run(
     config: Arc<Config>,
     mut from_discord: mpsc::Receiver<IrcMessage>,
@@ -88,10 +93,10 @@ async fn bridge(
                     tracing::debug!(nick = %msg.nick, "Discord->IRC: sending message");
                     let text = format!("<{}> {}", msg.nick, msg.content);
                     for line in text.lines() {
-                        let line = if line.len() <= 450 {
+                        let line = if line.len() <= IRC_MAX_LINE_LEN_BYTES {
                             line
                         } else {
-                            let mut end = 450;
+                            let mut end = IRC_MAX_LINE_LEN_BYTES;
                             while !line.is_char_boundary(end) {
                                 end -= 1;
                             }
