@@ -33,11 +33,20 @@ async fn main() -> Result<()> {
         config.irc_channel
     );
 
-    tokio::select! {
-        res = discord_receiver => tracing::error!("Discord receiver stopped: {:?}", res),
-        res = discord_sender   => tracing::error!("Discord sender stopped: {:?}",   res),
-        res = irc_bot          => tracing::error!("IRC bot stopped: {:?}",          res),
+    let (label, res) = tokio::select! {
+        res = discord_receiver => ("Discord receiver", res),
+        res = discord_sender   => ("Discord sender",   res),
+        res = irc_bot          => ("IRC bot",           res),
+    };
+
+    match res {
+        Ok(Ok(())) => tracing::info!("{label} stopped cleanly"),
+        Ok(Err(e)) => tracing::error!("{label} stopped: {e:?}"),
+        Err(e) => tracing::error!("{label} panicked: {e:?}"),
     }
 
-    return Ok(());
+    // any task exiting during steady-state operation means the bridge is broken;
+    // exit non-zero so a restart policy (systemd, docker) picks this up instead of
+    // the process idling with two tasks silently stopped.
+    return Err(anyhow::anyhow!("{label} exited, shutting down bridge"));
 }
