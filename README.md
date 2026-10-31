@@ -13,7 +13,7 @@
 
 1. Go to the [Discord Developer Portal](https://discord.com/developers/applications) and create a new application
 2. Go to **Bot** → click **Reset Token** → copy the token — this is your `DISCORD_TOKEN`
-3. Under **Privileged Gateway Intents**, enable **Message Content Intent**
+3. Under **Privileged Gateway Intents**, enable **Message Content Intent** and **Server Members Intent**
 4. Go to **OAuth2** → **URL Generator** → select the **bot** scope → select **Read Message History** and **View Channels** permissions
 5. Open the generated URL to invite the bot to your server
 

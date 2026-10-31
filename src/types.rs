@@ -14,18 +14,29 @@ pub struct IrcMessage {
 // ── Trait extensions on crate message types ──────────────────────────────────
 
 pub trait DiscordMessageExt {
-    fn to_irc_message(&self) -> Option<IrcMessage>;
+    fn to_irc_message(&self, cache: &poise::serenity_prelude::Cache) -> Option<IrcMessage>;
 }
 
 impl DiscordMessageExt for poise::serenity_prelude::Message {
-    fn to_irc_message(&self) -> Option<IrcMessage> {
+    fn to_irc_message(&self, cache: &poise::serenity_prelude::Cache) -> Option<IrcMessage> {
+        use poise::serenity_prelude::{ContentSafeOptions, content_safe};
+
         let content = self.content.trim();
         if content.is_empty() {
             return None;
         }
+
+        // Resolve `<@id>`, `<@&id>` and `<#id>` to readable names. `@everyone` and `@here` stay
+        // as typed: IRC does not ping on them and a zero-width space would show up as garbage.
+        let mut options = ContentSafeOptions::new().clean_everyone(false).clean_here(false);
+        if let Some(guild_id) = self.guild_id {
+            options = options.display_as_member_from(guild_id);
+        }
+        let content = content_safe(cache, content, &options, &self.mentions);
+
         return Some(IrcMessage {
             nick: self.author.name.clone(),
-            content: normalize_for_irc(content),
+            content: normalize_for_irc(&content),
         });
     }
 }

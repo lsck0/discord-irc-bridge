@@ -18,7 +18,7 @@ pub struct Data {
 type Error = anyhow::Error;
 
 pub(crate) async fn event_handler(
-    _ctx: &serenity::Context,
+    ctx: &serenity::Context,
     event: &serenity::FullEvent,
     _framework: poise::FrameworkContext<'_, Data, Error>,
     data: &Data,
@@ -40,7 +40,7 @@ pub(crate) async fn event_handler(
                 return Ok(());
             }
 
-            let Some(irc_msg) = msg.to_irc_message() else {
+            let Some(irc_msg) = msg.to_irc_message(&ctx.cache) else {
                 tracing::debug!(author = %msg.author.name, "Discord: ignoring empty message");
                 return Ok(());
             };
@@ -57,7 +57,12 @@ pub(crate) async fn event_handler(
 }
 
 pub async fn run(config: Arc<Config>, to_irc: mpsc::Sender<IrcMessage>) -> Result<()> {
-    let intents = serenity::GatewayIntents::GUILD_MESSAGES | serenity::GatewayIntents::MESSAGE_CONTENT;
+    // GUILDS and GUILD_MEMBERS fill the cache with role, channel and member names so mentions
+    // resolve to server nicknames on the IRC side. GUILD_MEMBERS is privileged.
+    let intents = serenity::GatewayIntents::GUILDS
+        | serenity::GatewayIntents::GUILD_MEMBERS
+        | serenity::GatewayIntents::GUILD_MESSAGES
+        | serenity::GatewayIntents::MESSAGE_CONTENT;
     let token = config.discord_token.clone();
 
     let framework = poise::Framework::builder()
