@@ -18,12 +18,13 @@ async fn main() -> Result<()> {
         .init();
 
     let config = Arc::new(config::Config::from_env()?);
+    let member_index = Arc::new(tokio::sync::RwLock::new(discord_irc_bridge::members::MemberIndex::new()));
 
     let (discord_to_irc_tx, discord_to_irc_rx) = mpsc::channel::<types::IrcMessage>(256);
     let (irc_to_discord_tx, irc_to_discord_rx) = mpsc::channel::<types::DiscordMessage>(256);
 
-    let discord_receiver = tokio::spawn(discord::receiver::run(config.clone(), discord_to_irc_tx));
-    let discord_sender = tokio::spawn(discord::sender::run(config.clone(), irc_to_discord_rx));
+    let discord_receiver = tokio::spawn(discord::receiver::run(config.clone(), discord_to_irc_tx, member_index.clone()));
+    let discord_sender = tokio::spawn(discord::sender::run(config.clone(), irc_to_discord_rx, member_index.clone()));
     let irc_bot = tokio::spawn(irc::run(config.clone(), discord_to_irc_rx, irc_to_discord_tx));
 
     tracing::info!(

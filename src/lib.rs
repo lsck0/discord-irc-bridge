@@ -3,5 +3,6 @@
 pub mod config;
 pub mod discord;
 pub mod irc;
+pub mod members;
 pub mod queue;
 pub mod types;
