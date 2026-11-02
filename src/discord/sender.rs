@@ -5,12 +5,22 @@ use reqwest::StatusCode;
 use serde::Serialize;
 use tokio::sync::mpsc;
 
-use crate::{config::Config, queue::TimedVecQueue, types::DiscordMessage};
+use crate::{
+    config::Config,
+    members::MemberIndex,
+    queue::TimedVecQueue,
+    types::DiscordMessage,
+};
+use tokio::sync::RwLock;
 
 // Webhooks are documented at 30 req/min. 2 100 ms gives comfortable headroom.
 const SEND_INTERVAL: Duration = Duration::from_millis(2_100);
 
-pub async fn run(config: Arc<Config>, mut rx: mpsc::Receiver<DiscordMessage>) -> Result<()> {
+pub async fn run(
+    config: Arc<Config>,
+    mut rx: mpsc::Receiver<DiscordMessage>,
+    member_index: Arc<RwLock<MemberIndex>>,
+) -> Result<()> {
     let http = reqwest::Client::new();
     let mut queue = TimedVecQueue::new(SEND_INTERVAL);
 
@@ -23,7 +33,8 @@ pub async fn run(config: Arc<Config>, mut rx: mpsc::Receiver<DiscordMessage>) ->
 
         if let Some(msg) = queue.try_pop() {
             tracing::debug!(user = %msg.username, "IRC->Discord: sending webhook");
-            match post_to_webhook(&http, &config.discord_webhook_url, &msg).await? {
+            let index = member_index.read().await;
+            match post_to_webhook(&http, &config.discord_webhook_url, &msg, &index).await? {
                 SendOutcome::Delivered => {
                     tracing::debug!(user = %msg.username, "IRC->Discord: delivered");
                 }
@@ -56,7 +67,12 @@ enum SendOutcome {
     RateLimited(Duration),
 }
 
-async fn post_to_webhook(http: &reqwest::Client, url: &str, msg: &DiscordMessage) -> Result<SendOutcome> {
+async fn post_to_webhook(
+    http: &reqwest::Client,
+    url: &str,
+    msg: &DiscordMessage,
+    member_index: &MemberIndex,
+) -> Result<SendOutcome> {
     #[derive(Serialize)]
     struct Payload<'a> {
         username: &'a str,
@@ -84,12 +100,14 @@ async fn post_to_webhook(http: &reqwest::Client, url: &str, msg: &DiscordMessage
         }
     };
 
+    let resolved_content = member_index.resolve_irc_to_discord(&msg.content);
+
     let response = http
         .post(url)
         .json(&Payload {
             username: &msg.username,
             avatar_url: avatar,
-            content: &msg.content,
+            content: &resolved_content,
         })
         .send()
         .await
